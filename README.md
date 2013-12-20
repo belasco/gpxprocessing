@@ -21,5 +21,5 @@ See --help for details
 
 I call it preprocesssing because I have several processes to go
 through before the file is accepted into our spatialite reference
-database. So this is apreliminary step before running
-gpx2spatialite (https://github.com/ptrv/gpx2spatialite)
+database. So this is a preliminary step before running
+[gpx2spatialite] (https://github.com/ptrv/gpx2spatialite)
