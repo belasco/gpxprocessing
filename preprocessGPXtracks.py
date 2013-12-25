@@ -101,8 +101,9 @@ def renametracks(filename, minpoints, crop):
             ele.text = trkpoint.find(('{%s}ele' % xmlns)).text.strip()
             time.text = trkpoint.find(('{%s}time' % xmlns)).text.strip()
 
-    print "Skipped %d track segs with %d \
-trackpoints or less" % (skippedtracksegs, minpoints)
+    if skippedtracksegs > 0:
+        print "Skipped %d track segs with %d trackpoints or less" % \
+          (skippedtracksegs, minpoints)
     return outtree
 
 
