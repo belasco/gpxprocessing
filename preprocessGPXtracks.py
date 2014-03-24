@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 """
+BUG: segment is cropped in the wrong place (line 96). An empty
+track and trackseg is already created before crop is checked and
+omitted. Puzzled as to why this gets past line 83: crop and seglen
+<= (minpoints + 2). I am guessing this happens based on gpx files
+being created from this script with empty tracks and segs.
+
 A script that takes a gpx file and copies it, writing a new track
 around every segment, changing the track name of each track to the
 date time of the first trackpoint, and deleting tracks with 3
@@ -31,6 +37,7 @@ General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 """
 
 try:
