@@ -53,6 +53,7 @@ Please install python-lxml from the repositories
 import sys
 from os import path
 from optparse import OptionParser
+from datetime import datetime
 
 
 def renametracks(filename, minpoints, crop):
@@ -69,6 +70,9 @@ def renametracks(filename, minpoints, crop):
                             attrib={"creator": "preprocessGPXtracks.py",
                                     "version": "1.0",
                                     "xmlns": "http://www.topografix.com/GPX/1/0"})
+
+    filetime = etree.SubElement(outtree, 'time')
+    filetime.text = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     xmlns = root.nsmap[None]
     trkseg = '{%s}trkseg' % (xmlns)
@@ -110,7 +114,7 @@ def renametracks(filename, minpoints, crop):
 
     if skippedtracksegs > 0:
         print "Skipped %d track segs with %d trackpoints or less" % \
-          (skippedtracksegs, minpoints)
+            (skippedtracksegs, minpoints)
     return outtree
 
 
