@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 """
-BUG: segment is cropped in the wrong place (line 96). An empty
+BUG: Very first point of track is never written. This means that the name is always a few seconds out.
+
+segment is cropped in the wrong place (line 96). An empty
 track and trackseg is already created before crop is checked and
 omitted. Puzzled as to why this gets past line 83: crop and seglen
 <= (minpoints + 2). I am guessing this happens based on gpx files
