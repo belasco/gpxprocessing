@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 """
-BUG: Very first point of track is never written. This means that the name is always a few seconds out.
-
-segment is cropped in the wrong place (line 96). An empty
+BUG: segment is cropped in the wrong place (line 96). An empty
 track and trackseg is already created before crop is checked and
 omitted. Puzzled as to why this gets past line 83: crop and seglen
 <= (minpoints + 2). I am guessing this happens based on gpx files
@@ -77,46 +75,55 @@ def renametracks(filename, minpoints, crop):
     filetime.text = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     xmlns = root.nsmap[None]
+    trk = '{%s}trk' % (xmlns)
     trkseg = '{%s}trkseg' % (xmlns)
 
     skippedtracksegs = 0
-    for trackseg in root.iter(trkseg):
-        try:
-            trktime = trackseg.find(('{%s}trkpt/{%s}time' % (xmlns, xmlns))).text
-        except AttributeError:
-            continue
-
-        # drop tracks less than or equal to the point threshold
-        # (adjust if we're cropping the first and last trackpoints
-        # from each segment)
-        seglen = len(trackseg)
-        if not crop and seglen <= minpoints \
-               or crop and seglen <= (minpoints + 2):
-            print 'Found track seg with %d trackpoints or less - skipping' % minpoints
-            skippedtracksegs += 1
-            continue
-
-        trk = etree.SubElement(outtree, 'trk')
-        name = etree.SubElement(trk, 'name')
-        name.text = trktime.strip()  # remove carriage returns with strip
-        newtrkseg = etree.SubElement(trk, 'trkseg')
-
-        for idx, trkpoint in enumerate(trackseg):
-            # if the crop option is on, drop first and last trackpoint
-            # from each segment
-            if crop and idx == 0 or crop and idx == seglen - 1:
+    for track in root.iter(trk):
+        for trackseg in track.iter(trkseg):
+            # root out empty tracksegs (they don't have times)
+            try:
+                trackseg.find(('{%s}trkpt/{%s}time' % (xmlns, xmlns))).text
+            except AttributeError:
                 continue
-            newtrkpoint = etree.SubElement(newtrkseg, 'trkpt')
-            newtrkpoint.set('lat', trkpoint.get('lat'))
-            newtrkpoint.set('lon', trkpoint.get('lon'))
-            ele = etree.SubElement(newtrkpoint, 'ele')
-            time = etree.SubElement(newtrkpoint, 'time')
-            ele.text = trkpoint.find(('{%s}ele' % xmlns)).text.strip()
-            time.text = trkpoint.find(('{%s}time' % xmlns)).text.strip()
 
+            # drop tracks less than or equal to the point threshold
+            # (adjust if we're cropping the first and last trackpoints
+            # from each segment)
+            seglen = len(trackseg)
+            if not crop and seglen <= minpoints \
+               or crop and seglen <= (minpoints + 2):
+                print 'Found track seg with %d trackpoints or less - skipping' % minpoints
+                skippedtracksegs += 1
+                continue
+
+            trk = etree.SubElement(outtree, 'trk')
+            name = etree.SubElement(trk, 'name')
+
+            newtrkseg = etree.SubElement(trk, 'trkseg')
+
+            for idx, trkpoint in enumerate(trackseg):
+                # if the crop option is on, drop first and last trackpoint
+                # from each segment
+                if crop and idx == 0 or crop and idx == seglen - 1:
+                    # remove node in old tree so that the track
+                    # name reflects the crop of first point
+                    trackseg.remove(trkpoint)
+                    continue
+                newtrkpoint = etree.SubElement(newtrkseg, 'trkpt')
+                newtrkpoint.set('lat', trkpoint.get('lat'))
+                newtrkpoint.set('lon', trkpoint.get('lon'))
+                ele = etree.SubElement(newtrkpoint, 'ele')
+                time = etree.SubElement(newtrkpoint, 'time')
+                ele.text = trkpoint.find(('{%s}ele' % xmlns)).text.strip()
+                time.text = trkpoint.find(('{%s}time' % xmlns)).text.strip()
+
+            name.text = trackseg.find(('{%s}trkpt/{%s}time'
+                                       % (xmlns, xmlns))).text.strip()
     if skippedtracksegs > 0:
         print "Skipped %d track segs with %d trackpoints or less" % \
             (skippedtracksegs, minpoints)
+
     return outtree
 
 
