@@ -79,12 +79,16 @@ def renametracks(filename, minpoints, crop):
     trkseg = '{%s}trkseg' % (xmlns)
 
     skippedtracksegs = 0
+    emptytracksegs = 0
+
     for track in root.iter(trk):
         for trackseg in track.iter(trkseg):
             # root out empty tracksegs (they don't have times)
             try:
                 trackseg.find(('{%s}trkpt/{%s}time' % (xmlns, xmlns))).text
             except AttributeError:
+                emptytracksegs += 1
+                track.remove(trackseg)
                 continue
 
             # drop tracks less than or equal to the point threshold
@@ -95,6 +99,7 @@ def renametracks(filename, minpoints, crop):
                or crop and seglen <= (minpoints + 2):
                 print 'Found track seg with %d trackpoints or less - skipping' % minpoints
                 skippedtracksegs += 1
+                track.remove(trackseg)
                 continue
 
             trk = etree.SubElement(outtree, 'trk')
@@ -103,8 +108,10 @@ def renametracks(filename, minpoints, crop):
             newtrkseg = etree.SubElement(trk, 'trkseg')
 
             for idx, trkpoint in enumerate(trackseg):
-                # if the crop option is on, drop first and last trackpoint
-                # from each segment
+                # if the crop option is on, drop first and last
+                # trackpoint from each segment. Consider making
+                # this a list with findall and then slicing if crop
+                # is on.
                 if crop and idx == 0 or crop and idx == seglen - 1:
                     # remove node in old tree so that the track
                     # name reflects the crop of first point
@@ -123,6 +130,8 @@ def renametracks(filename, minpoints, crop):
     if skippedtracksegs > 0:
         print "Skipped %d track segs with %d trackpoints or less" % \
             (skippedtracksegs, minpoints)
+    if emptytracksegs > 0:
+        print "Skipped %d empty track segs" % emptytracksegs
 
     return outtree
 
