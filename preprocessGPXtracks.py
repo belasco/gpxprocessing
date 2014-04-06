@@ -207,7 +207,7 @@ Default '_pp'""")
     filename = args[0]
     checkfile(filename)
     return filename, options.destination, options.minpoints, \
-           options.crop, options.suffix
+        options.crop, options.suffix
 
 
 def filewrite(newfilename, outtree):
@@ -223,6 +223,7 @@ def filewrite(newfilename, outtree):
 
 def gettracks(filename):
     """
+    Returns a list of track segments and the namespace
     """
     tree = etree.parse(filename)
     oldroot = tree.getroot()
@@ -233,22 +234,48 @@ def gettracks(filename):
     return tracklist, xmlns
 
 
-def sorttracks(tracklist, xmlns):
+def removeempty(tracklist, xmlns):
     """
+    for these purposes, a track is a track segment. Tracklist is a
+    list of track segs, track is the individual segment DO NOT USE
+    remove or pop, as this messes up the list iteration and misses
+    empty tracks if there are two in a row
     """
-    trktime = '{%s}trkpt/{%s}time' % (xmlns, xmlns)
+    newtracklist = []
+    numempty = 0
 
     for track in tracklist:
-        try:
-            track.find(trktime).text
-        except AttributeError:
-            tracklist.remove(track)
-            print "Removing empty track"
-            continue
+        if track.find('{%s}trkpt' % xmlns) is None:
+            numempty += 1
+        else:
+            newtracklist.append(track)
 
-        track[:] = sorted(track, key=lambda x: x.find(trktime))
+        # track[:] = sorted(track, key=lambda x: x.find(trktime))
 
-    return tracklist, trktime
+    return newtracklist, numempty
+
+
+def sorttracks(tracklist, xmlns):
+    """
+    Try and sort the track nodes by name
+
+    That titbit from stackexchange
+    for parent in doc.xpath('//*[./*]'): # Search for parent elements
+        parent[:] = sorted(parent,key=lambda x: x.tag)
+    """
+    firstpt = ('{%s}trkpt/{%s}time' % (xmlns, xmlns))
+
+    for track in tracklist:
+        print track.find(firstpt).text
+        track[:] = sorted(track, key=lambda x: x.find(firstpt))
+
+    return tracklist
+
+
+def printtracks(tracklist, xmlns):
+    for track in tracklist:
+        print track.find('{%s}trkpt/{%s}time' % (xmlns, xmlns)).text
+    return
 
 
 def main():
@@ -257,15 +284,20 @@ def main():
     '''
     filename, destination, minpoints, crop, suffix = parseargs()
 
-    # print "\nGenerating new gpx structure..."
-    # outtree = renametracks(filename, minpoints, crop)
-
     tracklist, xmlns = gettracks(filename)
 
-    tracklist, trktime = sorttracks(tracklist, xmlns)
+    print "Found %d track segments" % len(tracklist)
 
-    for track in tracklist:
-        print track.find(trktime).text()
+    tracklist, numempty = removeempty(tracklist, xmlns)
+
+    printtracks(tracklist, xmlns)
+
+    if numempty > 0:
+        print "Found %d empty tracks" % numempty
+
+    tracklist = sorttracks(tracklist, xmlns)
+
+    printtracks(tracklist, xmlns)
 
     # newfilename = makenewfilename(filename, destination, suffix)
 
