@@ -234,7 +234,7 @@ def gettracks(filename):
     return tracklist, xmlns
 
 
-def removeempty(tracklist, xmlns):
+def removedupesempty(tracklist, xmlns):
     """
     for these purposes, a track is a track segment. Tracklist is a
     list of track segs, track is the individual segment DO NOT USE
@@ -242,17 +242,25 @@ def removeempty(tracklist, xmlns):
     empty tracks if there are two in a row
     """
     newtracklist = []
+    firstptlist = []
     numempty = 0
+    numdupes = 0
 
     for track in tracklist:
         if track.find('{%s}trkpt' % xmlns) is None:
             numempty += 1
         else:
-            newtracklist.append(track)
+            firstpt = track.find('{%s}trkpt/{%s}time' % (xmlns, xmlns)).text
+            if firstpt in firstptlist:
+                print "Found a duplicate track"
+                numdupes += 1
+            else:
+                newtracklist.append(track)
+                firstptlist.append(firstpt)
 
         # track[:] = sorted(track, key=lambda x: x.find(trktime))
 
-    return newtracklist, numempty
+    return newtracklist, numempty, numdupes
 
 
 def sorttracks(tracklist, xmlns):
@@ -286,10 +294,13 @@ def main():
 
     print "Found %d track segments" % len(tracklist)
 
-    tracklist, numempty = removeempty(tracklist, xmlns)
+    tracklist, numempty, numdupes = removedupesempty(tracklist, xmlns)
 
     if numempty > 0:
         print "Found %d empty tracks" % numempty
+
+    if numdupes > 0:
+        print "Found %d duplicate tracks" % numdupes
 
     tracklist = sorttracks(tracklist, xmlns)
 
