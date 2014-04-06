@@ -265,9 +265,7 @@ def sorttracks(tracklist, xmlns):
     """
     firstpt = ('{%s}trkpt/{%s}time' % (xmlns, xmlns))
 
-    for track in tracklist:
-        print track.find(firstpt).text
-        track[:] = sorted(track, key=lambda x: x.find(firstpt))
+    tracklist = sorted(tracklist, key=lambda x: x.find(firstpt).text)
 
     return tracklist
 
@@ -289,8 +287,6 @@ def main():
     print "Found %d track segments" % len(tracklist)
 
     tracklist, numempty = removeempty(tracklist, xmlns)
-
-    printtracks(tracklist, xmlns)
 
     if numempty > 0:
         print "Found %d empty tracks" % numempty
