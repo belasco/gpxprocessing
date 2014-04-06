@@ -234,48 +234,35 @@ def gettracks(filename):
     return tracklist, xmlns
 
 
-def removedupesempty(tracklist, xmlns):
+def prepare(tracklist, xmlns):
     """
     for these purposes, a track is a track segment. Tracklist is a
     list of track segs, track is the individual segment DO NOT USE
     remove or pop, as this messes up the list iteration and misses
-    empty tracks if there are two in a row
+    empty tracks if there are two in a row. Also returns the list
+    sorted by the first trackpoint time
+
     """
     newtracklist = []
     firstptlist = []
     numempty = 0
     numdupes = 0
+    firstptfind = ('{%s}trkpt/{%s}time' % (xmlns, xmlns))
 
     for track in tracklist:
         if track.find('{%s}trkpt' % xmlns) is None:
             numempty += 1
         else:
-            firstpt = track.find('{%s}trkpt/{%s}time' % (xmlns, xmlns)).text
+            firstpt = track.find(firstptfind).text
             if firstpt in firstptlist:
-                print "Found a duplicate track"
                 numdupes += 1
             else:
                 newtracklist.append(track)
                 firstptlist.append(firstpt)
 
-        # track[:] = sorted(track, key=lambda x: x.find(trktime))
+    newtracklist = sorted(newtracklist, key=lambda x: x.find(firstptfind).text)
 
     return newtracklist, numempty, numdupes
-
-
-def sorttracks(tracklist, xmlns):
-    """
-    Try and sort the track nodes by name
-
-    That titbit from stackexchange
-    for parent in doc.xpath('//*[./*]'): # Search for parent elements
-        parent[:] = sorted(parent,key=lambda x: x.tag)
-    """
-    firstpt = ('{%s}trkpt/{%s}time' % (xmlns, xmlns))
-
-    tracklist = sorted(tracklist, key=lambda x: x.find(firstpt).text)
-
-    return tracklist
 
 
 def printtracks(tracklist, xmlns):
@@ -294,15 +281,13 @@ def main():
 
     print "Found %d track segments" % len(tracklist)
 
-    tracklist, numempty, numdupes = removedupesempty(tracklist, xmlns)
+    tracklist, numempty, numdupes = prepare(tracklist, xmlns)
 
     if numempty > 0:
         print "Found %d empty tracks" % numempty
 
     if numdupes > 0:
         print "Found %d duplicate tracks" % numdupes
-
-    tracklist = sorttracks(tracklist, xmlns)
 
     printtracks(tracklist, xmlns)
 
