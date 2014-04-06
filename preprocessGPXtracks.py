@@ -169,7 +169,7 @@ def parseargs():
     """
     """
     usage = "usage: %prog [option -d] /path/to/gpx/file.gpx"
-    parser = OptionParser(usage, version="%prog 0.1")
+    parser = OptionParser(usage, version="%prog 0.2")
     parser.add_option("-d",
                       "--destination",
                       dest="destination",
@@ -221,21 +221,58 @@ def filewrite(newfilename, outtree):
     return
 
 
+def gettracks(filename):
+    """
+    """
+    tree = etree.parse(filename)
+    oldroot = tree.getroot()
+    xmlns = oldroot.nsmap[None]
+    trkseg = '{%s}trk/{%s}trkseg' % (xmlns, xmlns)
+    tracklist = oldroot.findall(trkseg)
+
+    return tracklist, xmlns
+
+
+def sorttracks(tracklist, xmlns):
+    """
+    """
+    trktime = '{%s}trkpt/{%s}time' % (xmlns, xmlns)
+
+    for track in tracklist:
+        try:
+            track.find(trktime).text
+        except AttributeError:
+            tracklist.remove(track)
+            print "Removing empty track"
+            continue
+
+        track[:] = sorted(track, key=lambda x: x.find(trktime))
+
+    return tracklist, trktime
+
+
 def main():
     '''
     parse the arguments and get everything to run
     '''
     filename, destination, minpoints, crop, suffix = parseargs()
 
-    print "\nGenerating new gpx structure..."
-    outtree = renametracks(filename, minpoints, crop)
+    # print "\nGenerating new gpx structure..."
+    # outtree = renametracks(filename, minpoints, crop)
 
-    newfilename = makenewfilename(filename, destination, suffix)
+    tracklist, xmlns = gettracks(filename)
 
-    print "Writing file to  %s" % newfilename
-    filewrite(newfilename, outtree)
+    tracklist, trktime = sorttracks(tracklist, xmlns)
 
-    print "Done - script ends\n"
+    for track in tracklist:
+        print track.find(trktime).text()
+
+    # newfilename = makenewfilename(filename, destination, suffix)
+
+    # print "Writing file to  %s" % newfilename
+    # filewrite(newfilename, outtree)
+
+    # print "Done - script ends\n"
 
 
 if __name__ == '__main__':
