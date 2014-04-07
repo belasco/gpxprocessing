@@ -201,13 +201,20 @@ Off by default""")
                       help="""
 Change the suffix of the output gpx file.
 Default '_pp'""")
+    parser.add_option("-q",
+                      "--quiet",
+                      dest="quiet",
+                      default=False,
+                      action="store_true",
+                      help="""
+Quiet mode - silence the information.""")
     options, args = parser.parse_args()
     if len(args) != 1:
         parser.error("\nPlease define input GPX file")
     filename = args[0]
     checkfile(filename)
     return filename, options.destination, options.minpoints, \
-        options.crop, options.suffix
+        options.crop, options.suffix, options.quiet
 
 
 def filewrite(newfilename, outtree):
@@ -275,18 +282,19 @@ def main():
     '''
     parse the arguments and get everything to run
     '''
-    filename, destination, minpoints, crop, suffix = parseargs()
+    filename, destination, minpoints, crop, suffix, quiet = parseargs()
 
     tracklist, xmlns = gettracks(filename)
 
-    print "Found %d track segments" % len(tracklist)
+    if not quiet:
+        print "Found %d track segments" % len(tracklist)
 
     tracklist, numempty, numdupes = prepare(tracklist, xmlns)
 
-    if numempty > 0:
+    if numempty > 0 and not quiet:
         print "Found %d empty tracks" % numempty
 
-    if numdupes > 0:
+    if numdupes > 0 and not quiet:
         print "Found %d duplicate tracks" % numdupes
 
     printtracks(tracklist, xmlns)
