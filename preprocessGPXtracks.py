@@ -19,6 +19,7 @@ Options:
 * --destination <string>: specify a destination folder for the processed file
 * --crop: turn on cropping of first and last trackpoints
 * --minpoints <integer>: set the maximum number of points a track must have
+* --quiet: don't print information to STDOUT
 * See --help for details
 
 I call it preprocesssing because I have several processes to go
