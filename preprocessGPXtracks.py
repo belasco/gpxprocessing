@@ -56,82 +56,60 @@ from optparse import OptionParser
 from datetime import datetime
 
 
-def renametracks(filename, minpoints, crop):
+def makeouttree(tracklist, xmlns, crop, minpoints, quiet):
     """
-    etree parsing functions. Returns a tree with new track
-    names. Ignores the track structure and makes a new track, named
-    with the date of the first trackpoint, every time a new segment is
-    found.
+    This is where the new xml structure is made. Iterate through
+    the tracklist, dropping tracks less or equal to minpoints,
+    cropping first and last points if option is set. Produce
+    outtree which will be written to the file eventually
     """
-    tree = etree.parse(filename)
-    root = tree.getroot()
+    skippedtracksegs = 0
 
     outtree = etree.Element('gpx',
                             attrib={"creator": "preprocessGPXtracks.py",
                                     "version": "1.0",
-                                    "xmlns": "http://www.topografix.com/GPX/1/0"})
+                                    "xmlns":
+                                    "http://www.topografix.com/GPX/1/0"})
 
     filetime = etree.SubElement(outtree, 'time')
-    filetime.text = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    filetime.text = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    xmlns = root.nsmap[None]
-    trk = '{%s}trk' % (xmlns)
-    trkseg = '{%s}trkseg' % (xmlns)
+    for track in tracklist:
+        # drop tracks less than or equal to minpoints
+        # (adjust if we're cropping the first and last trackpoints
+        # from each segment)
+        tracklen = len(track)
+        if not crop and tracklen <= minpoints \
+           or crop and tracklen <= (minpoints + 2):
+            skippedtracksegs += 1
+            continue
 
-    skippedtracksegs = 0
-    emptytracksegs = 0
+        trk = etree.SubElement(outtree, 'trk')
+        name = etree.SubElement(trk, 'name')
+        newtrkseg = etree.SubElement(trk, 'trkseg')
 
-    for track in root.iter(trk):
-        for trackseg in track.iter(trkseg):
-            # root out empty tracksegs (they don't have times)
-            try:
-                trackseg.find(('{%s}trkpt/{%s}time' % (xmlns, xmlns))).text
-            except AttributeError:
-                emptytracksegs += 1
-                track.remove(trackseg)
-                continue
+        pointlist = track.findall('{%s}trkpt' % (xmlns))
+        if crop:
+            # make sure track name isn't from a point that is no
+            # longer in outgoing list
+            track.remove(pointlist[0])
+            pointlist = pointlist[1:-1]
 
-            # drop tracks less than or equal to the point threshold
-            # (adjust if we're cropping the first and last trackpoints
-            # from each segment)
-            seglen = len(trackseg)
-            if not crop and seglen <= minpoints \
-               or crop and seglen <= (minpoints + 2):
-                print 'Found track seg with %d trackpoints or less - skipping' % minpoints
-                skippedtracksegs += 1
-                track.remove(trackseg)
-                continue
+        for trkpoint in pointlist:
+            newtrkpoint = etree.SubElement(newtrkseg, 'trkpt')
+            newtrkpoint.set('lat', trkpoint.get('lat'))
+            newtrkpoint.set('lon', trkpoint.get('lon'))
+            ele = etree.SubElement(newtrkpoint, 'ele')
+            time = etree.SubElement(newtrkpoint, 'time')
+            ele.text = trkpoint.find(('{%s}ele' % xmlns)).text.strip()
+            time.text = trkpoint.find(('{%s}time' % xmlns)).text.strip()
 
-            trk = etree.SubElement(outtree, 'trk')
-            name = etree.SubElement(trk, 'name')
+        name.text = track.find(('{%s}trkpt/{%s}time'
+                                % (xmlns, xmlns))).text.strip()
 
-            newtrkseg = etree.SubElement(trk, 'trkseg')
-
-            for idx, trkpoint in enumerate(trackseg):
-                # if the crop option is on, drop first and last
-                # trackpoint from each segment. Consider making
-                # this a list with findall and then slicing if crop
-                # is on.
-                if crop and idx == 0 or crop and idx == seglen - 1:
-                    # remove node in old tree so that the track
-                    # name reflects the crop of first point
-                    trackseg.remove(trkpoint)
-                    continue
-                newtrkpoint = etree.SubElement(newtrkseg, 'trkpt')
-                newtrkpoint.set('lat', trkpoint.get('lat'))
-                newtrkpoint.set('lon', trkpoint.get('lon'))
-                ele = etree.SubElement(newtrkpoint, 'ele')
-                time = etree.SubElement(newtrkpoint, 'time')
-                ele.text = trkpoint.find(('{%s}ele' % xmlns)).text.strip()
-                time.text = trkpoint.find(('{%s}time' % xmlns)).text.strip()
-
-            name.text = trackseg.find(('{%s}trkpt/{%s}time'
-                                       % (xmlns, xmlns))).text.strip()
-    if skippedtracksegs > 0:
-        print "Skipped %d track segs with %d trackpoints or less" % \
-            (skippedtracksegs, minpoints)
-    if emptytracksegs > 0:
-        print "Skipped %d empty track segs" % emptytracksegs
+    if not quiet:
+        print 'Skipped %d track segs with %d \
+trackpoints or less' % (skippedtracksegs, minpoints)
 
     return outtree
 
@@ -144,10 +122,12 @@ def makenewfilename(filename, destination, suffix):
     head, tail = path.split(filename)
     filename, extension = path.splitext(tail)
     newfilename = '%s%s%s' % (filename, suffix, extension)
+
     if destination:
         newfilepath = path.join(destination, newfilename)
     else:
         newfilepath = path.join(head, newfilename)
+
     return newfilepath
 
 
@@ -166,8 +146,6 @@ def checkfile(filename):
 
 
 def parseargs():
-    """
-    """
     usage = "usage: %prog [option -d] /path/to/gpx/file.gpx"
     parser = OptionParser(usage, version="%prog 0.2")
     parser.add_option("-d",
@@ -208,27 +186,34 @@ Default '_pp'""")
                       action="store_true",
                       help="""
 Quiet mode - silence the information.""")
+
     options, args = parser.parse_args()
+
     if len(args) != 1:
         parser.error("\nPlease define input GPX file")
     filename = args[0]
+
     checkfile(filename)
+
     return filename, options.destination, options.minpoints, \
         options.crop, options.suffix, options.quiet
 
 
-def filewrite(newfilename, outtree):
-    """
-    """
+def filewrite(newfilename, outtree, quiet):
     with open(newfilename, 'w') as writefile:
         writefile.write(etree.tostring(outtree,
                                        encoding="utf-8",
                                        pretty_print=True,
                                        xml_declaration=True))
+
+    if not quiet:
+        print "File written to %s" % newfilename
+        print
+
     return
 
 
-def gettracks(filename):
+def gettracks(filename, quiet):
     """
     Returns a list of track segments and the namespace
     """
@@ -238,17 +223,19 @@ def gettracks(filename):
     trkseg = '{%s}trk/{%s}trkseg' % (xmlns, xmlns)
     tracklist = oldroot.findall(trkseg)
 
+    if not quiet:
+        print "Found %d track segments" % len(tracklist)
+
     return tracklist, xmlns
 
 
-def prepare(tracklist, xmlns):
+def prepare(tracklist, xmlns, quiet):
     """
     for these purposes, a track is a track segment. Tracklist is a
     list of track segs, track is the individual segment DO NOT USE
     remove or pop, as this messes up the list iteration and misses
     empty tracks if there are two in a row. Also returns the list
     sorted by the first trackpoint time
-
     """
     newtracklist = []
     firstptlist = []
@@ -269,42 +256,27 @@ def prepare(tracklist, xmlns):
 
     newtracklist = sorted(newtracklist, key=lambda x: x.find(firstptfind).text)
 
-    return newtracklist, numempty, numdupes
-
-
-def printtracks(tracklist, xmlns):
-    for track in tracklist:
-        print track.find('{%s}trkpt/{%s}time' % (xmlns, xmlns)).text
-    return
-
-
-def main():
-    '''
-    parse the arguments and get everything to run
-    '''
-    filename, destination, minpoints, crop, suffix, quiet = parseargs()
-
-    tracklist, xmlns = gettracks(filename)
-
-    if not quiet:
-        print "Found %d track segments" % len(tracklist)
-
-    tracklist, numempty, numdupes = prepare(tracklist, xmlns)
-
     if numempty > 0 and not quiet:
         print "Found %d empty tracks" % numempty
-
     if numdupes > 0 and not quiet:
         print "Found %d duplicate tracks" % numdupes
 
-    printtracks(tracklist, xmlns)
+    return newtracklist, numempty, numdupes
 
-    # newfilename = makenewfilename(filename, destination, suffix)
 
-    # print "Writing file to  %s" % newfilename
-    # filewrite(newfilename, outtree)
+def main():
 
-    # print "Done - script ends\n"
+    filename, destination, minpoints, crop, suffix, quiet = parseargs()
+
+    tracklist, xmlns = gettracks(filename, quiet)
+
+    tracklist, numempty, numdupes = prepare(tracklist, xmlns, quiet)
+
+    outtree = makeouttree(tracklist, xmlns, crop, minpoints, quiet)
+
+    newfilename = makenewfilename(filename, destination, suffix)
+
+    filewrite(newfilename, outtree, quiet)
 
 
 if __name__ == '__main__':
