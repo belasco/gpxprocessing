@@ -1,15 +1,20 @@
 # gpxprocessing #
 
-Process GPX files - at first one script but who knows?
+Process GPX files
 
 ## preprocessGPXtracks ##
 
 A script that takes a gpx file and copies it, writing a new track
 around every segment, changing the track name of each track to the
 date time of the first trackpoint, and deleting tracks with 3
-trackpoints or less (see minpoints option). With the --crop option, it
-can also drop each first and last point from every trackseg (this
-improves cleaning as these points are often spurious).
+trackpoints or less (see minpoints option). It also ignores empty
+track segments in the original file, removes duplicate segments
+(based on the first timestamp occuring more than once), and sorts
+the track segments by time.
+
+With the --crop option, it can also drop each first and last point
+from every trackseg (this improves cleaning as these points are
+often spurious).
 
 Takes one argument, the path to the file to process
 
