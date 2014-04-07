@@ -1,25 +1,30 @@
 #!/usr/bin/env python
 """
-BUG: segment is cropped in the wrong place (line 96). An empty
-track and trackseg is already created before crop is checked and
-omitted. Puzzled as to why this gets past line 83: crop and seglen
-<= (minpoints + 2). I am guessing this happens based on gpx files
-being created from this script with empty tracks and segs.
-
 A script that takes a gpx file and copies it, writing a new track
 around every segment, changing the track name of each track to the
 date time of the first trackpoint, and deleting tracks with 3
-trackpoints or less (see minpoints option). With the --crop option, it
-can also drop each first and last point from every trackseg (this
-improves cleaning as these points are often spurious)
+trackpoints or less (see minpoints option). It also ignores empty
+track segments in the original file, removes duplicate segments
+(based on the first timestamp occuring more than once), and sorts
+the track segments by time.
+
+With the --crop option, it can also drop each first and last point
+from every trackseg (this improves cleaning as these points are
+often spurious).
 
 Takes one argument, the path to the file to process
+
 Options:
---suffix <string>: change the file suffix
---destination <string>: specify a destination folder for the processed file
---crop: turn on cropping of first and last trackpoints
---minpoints <integer>: set the maximum number of points a track must have
-See --help for details
+* --suffix <string>: change the file suffix
+* --destination <string>: specify a destination folder for the processed file
+* --crop: turn on cropping of first and last trackpoints
+* --minpoints <integer>: set the maximum number of points a track must have
+* See --help for details
+
+I call it preprocesssing because I have several processes to go
+through before the file is accepted into our spatialite reference
+database. So this is a preliminary step before running
+[gpx2spatialite] (https://github.com/ptrv/gpx2spatialite)
 
 Personal note: an adaptation of renameGPXtracksEtree.py
 
@@ -37,7 +42,6 @@ General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 """
 
 try:
