@@ -106,7 +106,12 @@ def makeouttree(tracklist, xmlns, crop, minpoints, quiet):
             newtrkpoint.set('lon', trkpoint.get('lon'))
             ele = etree.SubElement(newtrkpoint, 'ele')
             time = etree.SubElement(newtrkpoint, 'time')
-            ele.text = trkpoint.find(('{%s}ele' % xmlns)).text.strip()
+            try:
+                ele.text = trkpoint.find(('{%s}ele' % xmlns)).text.strip()
+            except AttributeError:
+                if not quiet:
+                    print "No elevation tag found - assuming 0"
+                ele.text = "0"
             time.text = trkpoint.find(('{%s}time' % xmlns)).text.strip()
 
         name.text = track.find(('{%s}trkpt/{%s}time'
