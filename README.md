@@ -10,7 +10,8 @@ date time of the first trackpoint, and deleting tracks with 3
 trackpoints or less (see minpoints option). It also ignores empty
 track segments in the original file, removes duplicate segments
 (based on the first timestamp occuring more than once), and sorts
-the track segments by time.
+the track segments by time. If it encounters a trackpoint with no
+ele tag, it inserts the value '0'.
 
 With the --crop option, it can also drop each first and last point
 from every trackseg (this improves cleaning as these points are
