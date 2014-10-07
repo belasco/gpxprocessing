@@ -221,16 +221,22 @@ Also sets Quiet mode to True.""")
         options.crop, options.suffix, options.quiet, options.stdout
 
 
-def filewrite(newfilename, outtree, quiet):
-    with open(newfilename, 'w') as writefile:
-        writefile.write(etree.tostring(outtree,
-                                       encoding="utf-8",
-                                       pretty_print=True,
-                                       xml_declaration=True))
+def filewrite(newfilename, outtree, quiet, stdout):
+    if stdout:
+        print(etree.tostring(outtree,
+                             encoding="utf-8",
+                             pretty_print=True,
+                             xml_declaration=True))
+    else:
+        with open(newfilename, 'w') as writefile:
+            writefile.write(etree.tostring(outtree,
+                                           encoding="utf-8",
+                                           pretty_print=True,
+                                           xml_declaration=True))
 
-    if not quiet:
-        print "File written to %s" % newfilename
-        print
+        if not quiet:
+            print "File written to %s" % newfilename
+            print
 
     return
 
@@ -298,7 +304,7 @@ def main():
 
     newfilename = makenewfilename(filename, destination, suffix)
 
-    filewrite(newfilename, outtree, quiet)
+    filewrite(newfilename, outtree, quiet, stdout)
 
 
 if __name__ == '__main__':
