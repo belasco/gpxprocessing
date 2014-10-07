@@ -215,6 +215,8 @@ Also sets Quiet mode to True.""")
     if options.stdout:
         options.quiet = True
 
+    options.minpoints = int(options.minpoints)
+
     checkfile(filename)
 
     return filename, options.destination, options.minpoints, \
