@@ -276,7 +276,7 @@ def prepare(tracklist, xmlns, quiet):
 
 def main():
 
-    filename, destination, minpoints, crop, suffix, quiet = parseargs()
+    filename, destination, minpoints, crop, suffix, quiet, stdout = parseargs()
 
     tracklist, xmlns = gettracks(filename, quiet)
 
