@@ -20,6 +20,7 @@ Options:
 * --crop: turn on cropping of first and last trackpoints
 * --minpoints <integer>: set the maximum number of points a track must have
 * --quiet: don't print information to STDOUT
+* --stdout: print new file to STDOUT for redirecting. Sets quiet mode to True
 * See --help for details
 
 I call it preprocesssing because I have several processes to go
@@ -196,6 +197,14 @@ Default '_pp'""")
                       action="store_true",
                       help="""
 Quiet mode - silence the information.""")
+    parser.add_option("-o",
+                      "--stdout",
+                      dest="stdout",
+                      default=False,
+                      action="store_true",
+                      help="""
+Print file to stdout. Useful for redirecting.
+Also sets Quiet mode to True.""")
 
     options, args = parser.parse_args()
 
@@ -203,10 +212,13 @@ Quiet mode - silence the information.""")
         parser.error("\nPlease define input GPX file")
     filename = args[0]
 
+    if options.stdout:
+        options.quiet = True
+
     checkfile(filename)
 
     return filename, options.destination, options.minpoints, \
-        options.crop, options.suffix, options.quiet
+        options.crop, options.suffix, options.quiet, options.stdout
 
 
 def filewrite(newfilename, outtree, quiet):
