@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 """
 A script that takes a gpx file and copies it, writing a new track
 around every segment, changing the track name of each track to the
