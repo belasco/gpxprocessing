@@ -226,11 +226,11 @@ Also sets Quiet mode to True.""")
 def filewrite(newfilename, outtree, quiet, stdout):
     if stdout:
         print((etree.tostring(outtree,
-                             encoding="utf-8",
-                             pretty_print=True,
-                             xml_declaration=True)))
+                              encoding="utf-8",
+                              pretty_print=True,
+                              xml_declaration=True)))
     else:
-        with open(newfilename, 'w') as writefile:
+        with open(newfilename, 'wb') as writefile:
             writefile.write(etree.tostring(outtree,
                                            encoding="utf-8",
                                            pretty_print=True,
