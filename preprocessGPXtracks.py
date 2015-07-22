@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 """
 A script that takes a gpx file and copies it, writing a new track
 around every segment, changing the track name of each track to the
@@ -49,12 +49,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 try:
     from lxml import etree
 except ImportError:
-    print """
+    print("""
 *************************************************
 You do not have a module that this script needs
 Please install python-lxml from the repositories
 *************************************************
-"""
+""")
     exit(2)
 import sys
 from os import path
@@ -111,7 +111,7 @@ def makeouttree(tracklist, xmlns, crop, minpoints, quiet):
                 ele.text = trkpoint.find(('{%s}ele' % xmlns)).text.strip()
             except AttributeError:
                 if not quiet:
-                    print "No elevation tag found - assuming 0"
+                    print("No elevation tag found - assuming 0")
                 ele.text = "0"
             time.text = trkpoint.find(('{%s}time' % xmlns)).text.strip()
 
@@ -119,8 +119,8 @@ def makeouttree(tracklist, xmlns, crop, minpoints, quiet):
                                 % (xmlns, xmlns))).text.strip()
 
     if not quiet:
-        print 'Skipped %d track segs with %d \
-trackpoints or less' % (skippedtracksegs, minpoints)
+        print('Skipped %d track segs with %d \
+trackpoints or less' % (skippedtracksegs, minpoints))
 
     return outtree
 
@@ -144,14 +144,14 @@ def makenewfilename(filename, destination, suffix):
 
 def checkfile(filename):
     if not(path.isfile(filename)):
-        print '*' * 48
-        print "input file %s not found" % filename
-        print '*' * 48
+        print('*' * 48)
+        print("input file %s not found" % filename)
+        print('*' * 48)
         sys.exit(2)
     if path.splitext(filename)[1] != '.gpx':
-        print '*' * 48
-        print "Please choose a gpx file as input"
-        print '*' * 48
+        print('*' * 48)
+        print("Please choose a gpx file as input")
+        print('*' * 48)
         sys.exit(2)
     return
 
@@ -225,10 +225,10 @@ Also sets Quiet mode to True.""")
 
 def filewrite(newfilename, outtree, quiet, stdout):
     if stdout:
-        print(etree.tostring(outtree,
+        print((etree.tostring(outtree,
                              encoding="utf-8",
                              pretty_print=True,
-                             xml_declaration=True))
+                             xml_declaration=True)))
     else:
         with open(newfilename, 'w') as writefile:
             writefile.write(etree.tostring(outtree,
@@ -237,8 +237,8 @@ def filewrite(newfilename, outtree, quiet, stdout):
                                            xml_declaration=True))
 
         if not quiet:
-            print "File written to %s" % newfilename
-            print
+            print("File written to %s" % newfilename)
+            print()
 
     return
 
@@ -254,7 +254,7 @@ def gettracks(filename, quiet):
     tracklist = oldroot.findall(trkseg)
 
     if not quiet:
-        print "Found %d track segments" % len(tracklist)
+        print("Found %d track segments" % len(tracklist))
 
     return tracklist, xmlns
 
@@ -287,9 +287,9 @@ def prepare(tracklist, xmlns, quiet):
     newtracklist = sorted(newtracklist, key=lambda x: x.find(firstptfind).text)
 
     if numempty > 0 and not quiet:
-        print "Found %d empty tracks" % numempty
+        print("Found %d empty tracks" % numempty)
     if numdupes > 0 and not quiet:
-        print "Found %d duplicate tracks" % numdupes
+        print("Found %d duplicate tracks" % numdupes)
 
     return newtracklist, numempty, numdupes
 
