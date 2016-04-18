@@ -249,7 +249,7 @@ def filewrite(newfilename, outtree, quiet, stdout):
 
         if not quiet:
             print("File written to %s" % newfilename)
-            print()
+            print
 
     return
 
