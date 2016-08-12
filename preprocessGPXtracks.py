@@ -169,7 +169,7 @@ def checkfile(filename):
 
 def parseargs():
     usage = "usage: %prog [option -d] /path/to/gpx/file.gpx"
-    parser = OptionParser(usage, version="%prog 0.2")
+    parser = OptionParser(usage, version="%prog 0.3")
     parser.add_option("-d",
                       "--destination",
                       dest="destination",
