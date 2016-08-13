@@ -133,20 +133,15 @@ def makeouttree(tracklist, xmlns, crop, minpoints, quiet):
 
         # Turn the pointlist into a dictionary so we can sort by time
         pointdict = makepointdict(pointlist, xmlns, quiet)
-        
-        # for trkpoint in pointlist:
-        #     newtrkpoint = etree.SubElement(newtrkseg, 'trkpt')
-        #     newtrkpoint.set('lat', trkpoint.get('lat'))
-        #     newtrkpoint.set('lon', trkpoint.get('lon'))
-        #     ele = etree.SubElement(newtrkpoint, 'ele')
-        #     time = etree.SubElement(newtrkpoint, 'time')
-        #     try:
-        #         ele.text = trkpoint.find(('{%s}ele' % xmlns)).text.strip()
-        #     except AttributeError:
-        #         if not quiet:
-        #             print("No elevation tag found - assuming 0")
-        #         ele.text = "0"
-        #     time.text = trkpoint.find(('{%s}time' % xmlns)).text.strip()
+
+        for time in sorted(pointdict.keys()):
+            newtrkpoint = etree.SubElement(newtrkseg, 'trkpt')
+            newtrkpoint.set('lat', pointdict[time][0])
+            newtrkpoint.set('lon', pointdict[time][1])
+            ele = etree.SubElement(newtrkpoint, 'ele')
+            ele.text = pointdict[time][2]
+            timetag = etree.SubElement(newtrkpoint, 'time')
+            timetag.text = time
 
         name.text = track.find(('{%s}trkpt/{%s}time'
                                 % (xmlns, xmlns))).text.strip()
