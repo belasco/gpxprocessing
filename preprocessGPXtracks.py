@@ -1,6 +1,5 @@
 #!/usr/bin/env python
-"""
-A script that takes a gpx file, saving a new one with a standard
+"""A script that takes a gpx file, saving a new one with a standard
 suffix '_pp' (that can be changed with the --suffix option) after
 performing the following adjustments to it:
 1. Each segment in the original file becomes a track in the new
@@ -15,31 +14,19 @@ performing the following adjustments to it:
 5. Duplicate segments (based on the first timestamp occuring more
    than once) are deleted.
 6. Track segments are sorted by time.
-7. Trackpoints with a missing 'ele' (elevation) tag get added with
+7. Trackpoints in each segment are ordered by time (it happened in
+   2016 that Dan's GPS started writing GPX tracks with some
+   trackpoints out of place).
+8. Trackpoints with a missing 'ele' (elevation) tag get added with
    a value of 0.
-8. The --crop option drops the first and last point from every
+9. The --crop option drops the first and last point from every
    trackseg (this improves cleaning as these points are often
    spurious).
-
-There is one argument: the path to the gpx file to process
-
-Options:
-* --suffix <string>: change the file suffix
-* --destination <string>: specify a destination folder for the
-    processed file
-* --crop: turn on cropping of first and last trackpoints
-* --minpoints <integer>: set the maximum number of points a track
-    must have
-* --quiet: don't print any information to STDOUT
-
-See --help for details
 
 I call it preprocesssing because I have several processes to go
 through before the file is accepted into our spatialite reference
 database. So this is a preliminary step before running
 [gpx2spatialite] (https://github.com/ptrv/gpx2spatialite)
-
-Personal note: an adaptation of renameGPXtracksEtree.py
 
 Copyright 2011 Daniel Belasco Rogers dbr <danbelasco@yahoo.co.uk>
 
@@ -55,6 +42,7 @@ General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 """
 
 try:
@@ -68,9 +56,85 @@ Please install python-lxml from the repositories
 """)
     exit(2)
 import sys
+import argparse
 from os import path
-from optparse import OptionParser
 from datetime import datetime
+
+__version = "0.3"
+
+
+def parseargs():
+    desc = "A script that takes a gpx file, saving a new one with a "
+    desc += "standard suffix '_pp' (that can be changed with the "
+    desc += "--suffix option) after performing the following adjustments "
+    desc += "to it: "
+    desc += "1. Each segment in the original file becomes a track in the "
+    desc += "new file i.e. tracks and tracksegments become the same "
+    desc += "thing. "
+    desc += "2. Each new track has the name of the timestamp of the "
+    desc += "first trackpoint. "
+    desc += "3. Tracksegments / Tracks with less than the default number "
+    desc += "of 3 trackpoints are deleted from the processed file. This can "
+    desc += "be changed with the --minpoints option. "
+    desc += "4. Empty track segments in the original file are deleted. "
+    desc += "5. Duplicate segments (based on the first timestamp occuring "
+    desc += "more than once) are deleted. "
+    desc += "6. Track segments are sorted by time. "
+    desc += "7. Trackpoints in each segment are ordered by time "
+    desc += "(it happened in 2016 that Dan's GPS started writing GPX tracks "
+    desc += "with some trackpoints out of place). "
+    desc += "8. Trackpoints with a missing 'ele' (elevation) tag get added "
+    desc += "with a value of 0. "
+    desc += "9. The --crop option drops the first and last point from "
+    desc += "every trackseg (this improves cleaning as these points are "
+    desc += "often spurious). "
+    desc += "I call it preprocesssing because I have several processes to "
+    desc += "go through before the file is accepted into our spatialite "
+    desc += "reference database. So this is a preliminary step before "
+    desc += "running [gpx2spatialite] (https://github.com/ptrv/gpx2spatialite) "
+    desc += "Version={}".format(__version)
+
+    parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument('-v', '--version', action='version',
+                        version='%(prog)s {version}'.format(version=__version))
+    parser.add_argument("gpxfile", help="GPX file to process")
+    parser.add_argument("-d",
+                        "--destination",
+                        default=None,
+                        help="""Specify a different folder to save the output file in. Default
+                        is the same folder as the original GPX file""")
+    parser.add_argument("-m",
+                        "--minpoints",
+                        default=3,
+                        help="""Define a minimum number of points
+                        for a track to be processed. Tracks with
+                        less than this number will be dropped
+                        Default = 3""")
+    parser.add_argument("-c",
+                        "--crop",
+                        default=False,
+                        action="store_true",
+                        help="""Crop the first and last trackpoints from all segments. Note:
+                        Still reject tracks that are equal to or
+                        below the minpoints threshold after this.
+                        Off by default""")
+    parser.add_argument("-s",
+                        "--suffix",
+                        default="_pp",
+                        help="""Change the suffix of the output gpx file. 
+                        Default '_pp'""")
+    parser.add_argument("-q",
+                        "--quiet",
+                        default=False,
+                        action="store_true",
+                        help="Quiet mode - silence the information.")
+    parser.add_argument("-o",
+                        "--stdout",
+                        default=False,
+                        action="store_true",
+                        help="""Print file to stdout. Useful for redirecting. Also sets Quiet
+                        mode to True.""")
+    return parser.parse_args()
 
 
 def makepointdict(pointlist, xmlns, quiet):
@@ -184,73 +248,6 @@ def checkfile(filename):
     return
 
 
-def parseargs():
-    usage = "usage: %prog [option -d] /path/to/gpx/file.gpx"
-    parser = OptionParser(usage, version="%prog 0.3")
-    parser.add_option("-d",
-                      "--destination",
-                      dest="destination",
-                      default=None,
-                      help="""
-Specify a folder to save the tracknamed file in""")
-    parser.add_option("-m",
-                      "--minpoints",
-                      dest="minpoints",
-                      default=3,
-                      help="""
-Define a minimum number of points for a track to be processed. Tracks
-with less than this number will be dropped
-Default = 3""")
-    parser.add_option("-c",
-                      "--crop",
-                      dest="crop",
-                      default=False,
-                      action="store_true",
-                      help="""
-Crop the first and last trackpoints from all segments.
-Note: Still reject tracks that are equal to or below
-the minpoints threshold after this.
-Off by default""")
-    parser.add_option("-s",
-                      "--suffix",
-                      dest="suffix",
-                      default="_pp",
-                      help="""
-Change the suffix of the output gpx file.
-Default '_pp'""")
-    parser.add_option("-q",
-                      "--quiet",
-                      dest="quiet",
-                      default=False,
-                      action="store_true",
-                      help="""
-Quiet mode - silence the information.""")
-    parser.add_option("-o",
-                      "--stdout",
-                      dest="stdout",
-                      default=False,
-                      action="store_true",
-                      help="""
-Print file to stdout. Useful for redirecting.
-Also sets Quiet mode to True.""")
-
-    options, args = parser.parse_args()
-
-    if len(args) != 1:
-        parser.error("\nPlease define input GPX file")
-    filename = args[0]
-
-    if options.stdout:
-        options.quiet = True
-
-    options.minpoints = int(options.minpoints)
-
-    checkfile(filename)
-
-    return filename, options.destination, options.minpoints, \
-        options.crop, options.suffix, options.quiet, options.stdout
-
-
 def filewrite(newfilename, outtree, quiet, stdout):
     if stdout:
         print((etree.tostring(outtree,
@@ -324,17 +321,21 @@ def prepare(tracklist, xmlns, quiet):
 
 def main():
 
-    filename, destination, minpoints, crop, suffix, quiet, stdout = parseargs()
+    args = parseargs()
 
-    tracklist, xmlns = gettracks(filename, quiet)
+    filename = path.expanduser(args.gpxfile)
+    checkfile(filename)
 
-    tracklist, numempty, numdupes = prepare(tracklist, xmlns, quiet)
+    tracklist, xmlns = gettracks(filename, args.quiet)
 
-    outtree = makeouttree(tracklist, xmlns, crop, minpoints, quiet)
+    tracklist, numempty, numdupes = prepare(tracklist, xmlns, args.quiet)
 
-    newfilename = makenewfilename(filename, destination, suffix)
+    outtree = makeouttree(tracklist, xmlns, args.crop,
+                          args.minpoints, args.quiet)
 
-    filewrite(newfilename, outtree, quiet, stdout)
+    newfilename = makenewfilename(filename, args.destination, args.suffix)
+
+    filewrite(newfilename, outtree, args.quiet, args.stdout)
 
 
 if __name__ == '__main__':
