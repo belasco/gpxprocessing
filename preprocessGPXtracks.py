@@ -96,7 +96,7 @@ def parseargs():
 
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('-v', '--version', action='version',
-                        version='%(prog)s {version}'.format(version=__version))
+                        version='%(prog)s Version={version}'.format(version=__version))
     parser.add_argument("gpxfile", help="GPX file to process")
     parser.add_argument("-d",
                         "--destination",
