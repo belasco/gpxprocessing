@@ -167,7 +167,7 @@ def makeouttree(tracklist, xmlns, crop, minpoints, quiet):
 
     outtree = etree.Element('gpx',
                             attrib={"creator": "preprocessGPXtracks.py",
-                                    "version": "1.0",
+                                    "version": __version,
                                     "xmlns":
                                     "http://www.topografix.com/GPX/1/0"})
 
