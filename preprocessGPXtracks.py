@@ -166,8 +166,8 @@ def makeouttree(tracklist, xmlns, crop, minpoints, quiet):
     skippedtracksegs = 0
 
     outtree = etree.Element('gpx',
-                            attrib={"creator": "preprocessGPXtracks.py",
-                                    "version": __version,
+                            attrib={"creator": "preprocessGPXtracks.py v.{}".format(__version),
+                                    "version": "1.0",
                                     "xmlns":
                                     "http://www.topografix.com/GPX/1/0"})
 
